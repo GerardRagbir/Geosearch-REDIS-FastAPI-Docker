@@ -10,5 +10,5 @@ There is also a basic Dockerfile to host on Docker if needed.
 
 <h3>TODOs:</h3>
 
-[0] - POST to the database
-[0] - Advanced Search Functions
+- [ ] POST to the database
+- [ ] Advanced Search Functions
