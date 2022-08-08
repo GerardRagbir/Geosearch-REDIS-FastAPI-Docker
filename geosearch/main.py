@@ -7,10 +7,11 @@ from redis.commands.search.indexDefinition import IndexDefinition
 from redis.commands.search.field import GeoField, TextField
 from redis.commands.search.query import Query, GeoFilter
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # Get Environment Variables
-HOST_ID = os.environ.get("HOST_ID")
+HOST_URL = os.environ.get("HOST_URL")
 HOST_PORT = int(os.environ.get("HOST_PORT"))
 HEALTH_CHECK_INTERVAL = 60  # in seconds
 
@@ -23,9 +24,10 @@ index_def = IndexDefinition(prefix=["py_doc:"])
 data_model = (TextField("title"), TextField("type"), GeoField("location"))
 
 
+
 # Connect to redis database
 redisClient = redis.Redis(
-    host='{}.cache.amazonaws.com'.format(HOST_ID),
+    host=HOST_URL, #host='{}.cache.amazonaws.com'.format(HOST_ID),
     port=HOST_PORT,
     ssl_ca_certs=certifi.where(),
     db=0,
@@ -50,6 +52,16 @@ fts_client.create_index(data_model, definition=index_def)
 
 # Initialize FastAPI
 app = FastAPI()
+
+
+# Add Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['https://localhost:8000'],
+    allow_methods=['*'],
+    allow_headers=['*']
+)
+
 
 '''
 Obligatory Hello World Root
@@ -77,6 +89,16 @@ Accepts name:string and distance:int and returns a JSON collection.
 async def search_nearby(name:str, distance:int):
     nearby_results = fts_client.search(Query("*").add_filter(GeoFilter(name, radius=distance))).docs
     return nearby_results
+
+
+
+'''
+Post to /search/{name} to ADD a record.
+'''
+@app.post("/")
+async def add_new_location(data: data_model):
+    return fts_client.mset(data)
+
 
 
 if __name__ == "__main__":
